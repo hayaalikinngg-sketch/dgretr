@@ -1,163 +1,32 @@
 const SMART_LINK =
   "https://reorganizesoda.com/tik82qkw?key=bf1e2f1de5f360cb6f46893d717107d7";
 
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
+const IMAGES = [
+  "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=800&q=75",
+  "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=75",
+  "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=800&q=75",
+  "https://images.unsplash.com/photo-1485095329183-d0797cdc5676?auto=format&fit=crop&w=800&q=75",
+  "https://images.unsplash.com/photo-1512070679279-8988d32161be?auto=format&fit=crop&w=800&q=75",
+  "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=75",
+  "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=800&q=75",
+  "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&w=800&q=75",
+  "https://images.unsplash.com/photo-1542206395-9feb3edaa68d?auto=format&fit=crop&w=800&q=75",
+  "https://images.unsplash.com/photo-1484438788355-3f9a42f2f6c3?auto=format&fit=crop&w=800&q=75"
+];
 
-    try {
-      // Create table if it doesn't exist
-      await env.db.prepare(`
-        CREATE TABLE IF NOT EXISTS urls (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          code TEXT UNIQUE NOT NULL,
-          long_url TEXT NOT NULL,
-          created_at TEXT NOT NULL
-        )
-      `).run();
-
-      // Home page
-      if (request.method === "GET" && url.pathname === "/") {
-        return new Response(homePage(), {
-          headers: {
-            "content-type": "text/html;charset=UTF-8"
-          }
-        });
-      }
-
-      // Create short URL
-      if (
-        request.method === "POST" &&
-        url.pathname === "/api/shorten"
-      ) {
-        const body = await request.json();
-        const longUrl = String(body.url || "").trim();
-
-        if (!longUrl) {
-          return Response.json(
-            { error: "Please enter a URL." },
-            { status: 400 }
-          );
-        }
-
-        try {
-          const parsed = new URL(longUrl);
-
-          if (!["http:", "https:"].includes(parsed.protocol)) {
-            throw new Error();
-          }
-        } catch {
-          return Response.json(
-            { error: "Invalid URL." },
-            { status: 400 }
-          );
-        }
-
-        let code = randomCode(6);
-
-        await env.db.prepare(`
-          INSERT INTO urls
-          (code, long_url, created_at)
-          VALUES (?, ?, ?)
-        `)
-          .bind(
-            code,
-            longUrl,
-            new Date().toISOString()
-          )
-          .run();
-
-        return Response.json({
-          shortUrl: `${url.origin}/${code}`
-        });
-      }
-
-      // Short URL redirect page
-      if (request.method === "GET" && url.pathname.length > 1) {
-
-        const code =
-          url.pathname.substring(1).split("/")[0];
-
-        const result = await env.db.prepare(`
-          SELECT long_url
-          FROM urls
-          WHERE code = ?
-          LIMIT 1
-        `)
-          .bind(code)
-          .first();
-
-        if (!result) {
-          return new Response("Short URL not found.", {
-            status: 404
-          });
-        }
-
-        return new Response(
-          redirectPage(result.long_url),
-          {
-            headers: {
-              "content-type":
-                "text/html;charset=UTF-8"
-            }
-          }
-        );
-      }
-
-      return new Response("Not Found", {
-        status: 404
-      });
-
-    } catch (error) {
-
-      return Response.json(
-        {
-          error:
-            error.message ||
-            "Server error"
-        },
-        {
-          status: 500
-        }
-      );
-    }
-  }
-};
-
-
-function randomCode(length) {
-
-  const chars =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-  let code = "";
-
-  for (let i = 0; i < length; i++) {
-    code += chars[
-      Math.floor(
-        Math.random() * chars.length
-      )
-    ];
-  }
-
-  return code;
-}
-
-
-function homePage() {
-
-  return `<!DOCTYPE html>
-
-<html>
+const HTML = `
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
-
 <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+>
 
-<title>URL Shortener</title>
+<title>Watch Hub</title>
 
 <style>
 
@@ -165,791 +34,374 @@ content="width=device-width, initial-scale=1.0">
   box-sizing: border-box;
 }
 
-body {
-
-  margin: 0;
-
-  font-family:
-    Arial,
-    sans-serif;
-
-  background:
-    linear-gradient(
-      135deg,
-      #fff4f8,
-      #f4f5ff
-    );
-
-  color: #222;
+html {
+  scroll-behavior: smooth;
 }
 
-.container {
-
-  max-width: 1200px;
-
-  margin: auto;
-
-  padding: 25px 18px;
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f7f7f8;
+  color: #171717;
 }
 
 .header {
-
   text-align: center;
-
-  margin-bottom: 25px;
+  padding: 25px 15px 20px;
+  background: white;
+  border-bottom: 1px solid #eeeeee;
 }
 
 .logo {
-
-  font-size: 50px;
-}
-
-h1 {
-
-  margin: 5px 0;
-
   font-size: 42px;
+  margin-bottom: 5px;
 }
 
-h1 span {
-
-  color: #e83e72;
+.header h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 800;
 }
 
-.subtitle {
-
-  color: #666;
-
-  font-size: 18px;
+.header h1 span {
+  color: #e91e63;
 }
 
-.main {
-
-  display: grid;
-
-  grid-template-columns:
-    1fr 2fr 1fr;
-
-  gap: 20px;
-
-  align-items: start;
+.header p {
+  margin: 8px 0 0;
+  color: #777;
+  font-size: 15px;
 }
 
-.photos {
-
-  display: flex;
-
-  flex-direction: column;
-
-  gap: 18px;
-}
-
-.photo {
-
-  height: 190px;
-
-  border-radius: 18px;
-
-  overflow: hidden;
-
-  background: #eee;
-
-  box-shadow:
-    0 8px 25px
-    rgba(0,0,0,.12);
-
-  transition:
-    transform .2s;
-}
-
-.photo:hover {
-
-  transform:
-    scale(1.02);
-}
-
-.photo a {
-
-  display: block;
-
+.categories {
   width: 100%;
-
-  height: 100%;
-}
-
-.photo img {
-
-  width: 100%;
-
-  height: 100%;
-
-  object-fit: cover;
-
-  cursor: pointer;
-}
-
-.center {
-
-  text-align: center;
-}
-
-.input-box {
-
+  overflow-x: auto;
+  white-space: nowrap;
   background: white;
-
-  padding: 14px;
-
-  border-radius: 16px;
-
-  box-shadow:
-    0 8px 25px
-    rgba(0,0,0,.08);
+  padding: 12px 10px;
+  border-bottom: 1px solid #eeeeee;
 }
 
-input {
-
-  width: 100%;
-
-  padding: 17px;
-
-  border: 1px solid #ddd;
-
-  border-radius: 10px;
-
-  outline: none;
-
-  font-size: 16px;
-}
-
-button {
-
-  width: 100%;
-
-  margin-top: 12px;
-
-  padding: 16px;
-
-  border: 0;
-
-  border-radius: 11px;
-
-  background: #e83e72;
-
-  color: white;
-
-  font-size: 17px;
-
-  font-weight: bold;
-
-  cursor: pointer;
-}
-
-.result {
-
+.categories::-webkit-scrollbar {
   display: none;
-
-  margin-top: 20px;
-
-  padding: 20px;
-
-  background: white;
-
-  border-radius: 16px;
-
-  box-shadow:
-    0 8px 25px
-    rgba(0,0,0,.10);
 }
 
-.short {
+.category {
+  display: inline-block;
+  padding: 9px 17px;
+  margin-right: 7px;
+  border-radius: 20px;
+  background: #f1f1f3;
+  color: #333;
+  font-size: 14px;
+  font-weight: 600;
+}
 
-  margin-top: 12px;
+.category.active {
+  background: #e91e63;
+  color: white;
+}
 
+.container {
+  width: 96%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 18px 0 40px;
+}
+
+.search-box {
+  background: white;
+  border-radius: 14px;
+  padding: 5px;
+  margin-bottom: 20px;
+  border: 1px solid #eeeeee;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+}
+
+.search-box input {
+  width: 100%;
+  border: 0;
+  outline: none;
   padding: 14px;
-
-  background: #fff0f5;
-
-  color: #e83e72;
-
-  border-radius: 10px;
-
-  word-break: break-all;
-
-  font-weight: bold;
+  font-size: 16px;
+  background: transparent;
 }
 
-.copy {
-
-  background: #222;
-}
-
-.features {
-
-  margin-top: 30px;
-
+.grid {
   display: grid;
-
-  grid-template-columns:
-    repeat(3,1fr);
-
-  gap: 18px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 }
 
-.feature {
-
+.card {
   background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.09);
+  transition: transform 0.15s ease;
+}
 
-  padding: 22px;
+.card:active {
+  transform: scale(0.97);
+}
 
-  border-radius: 16px;
+.card-image {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  display: block;
+  background: #eeeeee;
+}
 
-  text-align: center;
+.card-info {
+  padding: 12px;
+}
 
-  box-shadow:
-    0 8px 20px
-    rgba(0,0,0,.06);
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.card-number {
+  color: #888;
+  font-size: 12px;
+  margin-top: 5px;
 }
 
 .footer {
-
   text-align: center;
-
-  margin-top: 25px;
-
-  color: #777;
+  padding: 30px 15px;
+  color: #888;
+  font-size: 13px;
 }
 
-.adsterra {
-
-  display: inline-block;
-
-  margin-top: 8px;
-
-  padding: 9px 15px;
-
-  background: #222;
-
-  color: white;
-
-  border-radius: 7px;
-
-  font-weight: bold;
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-@media(max-width:800px) {
+@media (max-width: 700px) {
 
-  .main {
-
-    grid-template-columns: 1fr;
+  .header {
+    padding: 20px 12px 16px;
   }
 
-  .photos {
-
-    display: grid;
-
-    grid-template-columns:
-      1fr 1fr;
+  .logo {
+    font-size: 36px;
   }
 
-  .photo {
-
-    height: 180px;
+  .header h1 {
+    font-size: 28px;
   }
 
-  .features {
-
-    grid-template-columns: 1fr;
+  .container {
+    width: 94%;
+    padding-top: 14px;
   }
 
-  h1 {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
 
-    font-size: 34px;
+  .card {
+    border-radius: 12px;
+  }
+
+  .card-info {
+    padding: 9px;
+  }
+
+  .card-title {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 380px) {
+
+  .grid {
+    gap: 8px;
+  }
+
+  .card-title {
+    font-size: 12px;
   }
 }
 
 </style>
-
 </head>
 
 <body>
 
-<div class="container">
+<header class="header">
 
-<div class="header">
+  <div class="logo">🎬</div>
 
-<div class="logo">🔗</div>
+  <h1>
+    Watch <span>Hub</span>
+  </h1>
 
-<h1>
-URL <span>Shortener</span>
-</h1>
+  <p>
+    Featured videos & entertainment
+  </p>
 
-<div class="subtitle">
-Shorten links, share easily
-</div>
+</header>
 
-</div>
+<div class="categories">
 
-
-<div class="main">
-
-
-<!-- PHOTO 1 -->
-
-<div class="photos">
-
-<div class="photo">
-
-<a
-href="${SMART_LINK}"
-target="_blank"
-rel="noopener noreferrer"
->
-
-<img
-src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80"
-alt="Photo"
->
-
-</a>
+  <span class="category active">All</span>
+  <span class="category">Popular</span>
+  <span class="category">Trending</span>
+  <span class="category">New</span>
+  <span class="category">Featured</span>
+  <span class="category">Entertainment</span>
 
 </div>
 
+<main class="container">
 
-<div class="photo">
+  <div class="search-box">
 
-<a
-href="${SMART_LINK}"
-target="_blank"
-rel="noopener noreferrer"
->
+    <input
+      id="search"
+      type="search"
+      placeholder="Search..."
+      autocomplete="off"
+    >
 
-<img
-src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80"
-alt="Photo"
->
+  </div>
 
-</a>
+  <div id="grid" class="grid"></div>
 
-</div>
+</main>
 
-</div>
-
-
-<!-- URL SHORTENER -->
-
-<div class="center">
-
-<div class="input-box">
-
-<input
-id="url"
-type="url"
-placeholder="Enter your long URL"
->
-
-<button onclick="shorten()">
-Shorten URL
-</button>
-
-</div>
-
-
-<div
-id="result"
-class="result"
->
-
-<h3>
-Your short URL
-</h3>
-
-<div
-id="short"
-class="short"
-></div>
-
-<button
-class="copy"
-onclick="copyUrl()"
->
-Copy URL
-</button>
-
-</div>
-
-</div>
-
-
-<!-- PHOTO 3 + 4 -->
-
-<div class="photos">
-
-<div class="photo">
-
-<a
-href="${SMART_LINK}"
-target="_blank"
-rel="noopener noreferrer"
->
-
-<img
-src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80"
-alt="Photo"
->
-
-</a>
-
-</div>
-
-
-<div class="photo">
-
-<a
-href="${SMART_LINK}"
-target="_blank"
-rel="noopener noreferrer"
->
-
-<img
-src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=600&q=80"
-alt="Photo"
->
-
-</a>
-
-</div>
-
-</div>
-
-</div>
-
-
-<div class="features">
-
-<div class="feature">
-
-<h3>
-🔒 Safe & Secure
-</h3>
-
-<p>
-Your links are stored securely.
-</p>
-
-</div>
-
-
-<div class="feature">
-
-<h3>
-⚡ Fast & Easy
-</h3>
-
-<p>
-Shorten your URL in seconds.
-</p>
-
-</div>
-
-
-<div class="feature">
-
-<h3>
-💰 Smart Link
-</h3>
-
-<p>
-Smart Link enabled.
-</p>
-
-</div>
-
-</div>
-
-
-<div class="footer">
-
-Powered by Smart Link
-
-<div class="adsterra">
-ADSTERRA
-</div>
-
-</div>
-
-</div>
-
+<footer class="footer">
+  © 2026 Watch Hub
+</footer>
 
 <script>
 
-let currentShortUrl = "";
+const SMART_LINK = "${SMART_LINK}";
 
+const grid = document.getElementById("grid");
+const search = document.getElementById("search");
 
-async function shorten() {
+const items = [
+  ${IMAGES.map((image, index) => `
+  {
+    number: ${index + 1},
+    title: "Featured ${index + 1}",
+    image: "${image}"
+  }`).join(",")}
+];
 
-  const input =
-    document.getElementById("url");
+function displayItems(list) {
 
-  const result =
-    document.getElementById("result");
+  grid.innerHTML = "";
 
-  const short =
-    document.getElementById("short");
+  list.forEach(function(item) {
 
-  const value =
-    input.value.trim();
+    const card = document.createElement("div");
+
+    card.className = "card";
+
+    card.addEventListener("click", function() {
+      window.location.href = SMART_LINK;
+    });
+
+    const image = document.createElement("img");
+
+    image.className = "card-image";
+    image.src = item.image;
+    image.alt = item.title;
+    image.loading = "lazy";
+    image.decoding = "async";
+
+    const info = document.createElement("div");
+
+    info.className = "card-info";
+
+    const title = document.createElement("div");
+
+    title.className = "card-title";
+    title.textContent = item.title;
+
+    const number = document.createElement("div");
+
+    number.className = "card-number";
+    number.textContent = "Watch " + item.number;
+
+    info.appendChild(title);
+    info.appendChild(number);
+
+    card.appendChild(image);
+    card.appendChild(info);
+
+    grid.appendChild(card);
+
+  });
+}
+
+displayItems(items);
+
+search.addEventListener("input", function() {
+
+  const value = search.value.toLowerCase().trim();
 
   if (!value) {
-
-    alert(
-      "Please enter a URL."
-    );
-
+    displayItems(items);
     return;
   }
 
-  result.style.display =
-    "block";
+  const filtered = items.filter(function(item) {
 
-  short.textContent =
-    "Creating short URL...";
+    return item.title
+      .toLowerCase()
+      .includes(value);
 
-  try {
+  });
 
-    const response =
-      await fetch(
-        "/api/shorten",
-        {
-          method: "POST",
+  displayItems(filtered);
 
-          headers: {
-            "content-type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              url: value
-            })
-        }
-      );
-
-    const data =
-      await response.json();
-
-    if (!response.ok) {
-
-      short.textContent =
-        data.error ||
-        "Something went wrong.";
-
-      return;
-    }
-
-    currentShortUrl =
-      data.shortUrl;
-
-    short.textContent =
-      currentShortUrl;
-
-  } catch (error) {
-
-    short.textContent =
-      "Connection error.";
-
-  }
-}
-
-
-function copyUrl() {
-
-  if (!currentShortUrl) {
-    return;
-  }
-
-  navigator.clipboard
-    .writeText(
-      currentShortUrl
-    );
-
-  alert(
-    "Short URL copied!"
-  );
-}
+});
 
 </script>
 
 </body>
-
-</html>`;
-}
-
-
-function redirectPage(destination) {
-
-  const safe =
-    escapeHtml(destination);
-
-  return `<!DOCTYPE html>
-
-<html>
-
-<head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
-
-<title>Continue</title>
-
-<style>
-
-body {
-
-  margin: 0;
-
-  min-height: 100vh;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  font-family: Arial;
-
-  background:
-    linear-gradient(
-      135deg,
-      #fff4f8,
-      #f3f5ff
-    );
-}
-
-.card {
-
-  width: 90%;
-
-  max-width: 500px;
-
-  padding: 35px;
-
-  background: white;
-
-  border-radius: 20px;
-
-  text-align: center;
-
-  box-shadow:
-    0 15px 45px
-    rgba(0,0,0,.12);
-}
-
-.smart {
-
-  display: block;
-
-  padding: 16px;
-
-  margin-top: 20px;
-
-  background: #e83e72;
-
-  color: white;
-
-  text-decoration: none;
-
-  border-radius: 10px;
-
-  font-weight: bold;
-}
-
-.destination {
-
-  display: block;
-
-  margin-top: 12px;
-
-  padding: 15px;
-
-  background: #222;
-
-  color: white;
-
-  text-decoration: none;
-
-  border-radius: 10px;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div class="card">
-
-<h1>
-🔗 Link Ready
-</h1>
-
-<p>
-Your link is ready.
-</p>
-
-
-<a
-class="smart"
-href="${SMART_LINK}"
-target="_blank"
-rel="noopener noreferrer"
->
-Continue
-</a>
-
-
-<a
-class="destination"
-href="${safe}"
->
-Go to Destination
-</a>
-
-</div>
-
-</body>
-
-</html>`;
-}
-
-
-function escapeHtml(value) {
-
-  return String(value)
-
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-
-    .replace(
-      /</g,
-      "&lt;"
-    )
-
-    .replace(
-      />/g,
-      "&gt;"
-    )
-
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-}
+</html>
+`;
+
+export default {
+
+  async fetch(request) {
+
+    const userAgent =
+      request.headers.get("user-agent") || "";
+
+    const isAndroid =
+      /Android/i.test(userAgent);
+
+    if (!isAndroid) {
+      return Response.redirect(
+        "https://www.google.com",
+        302
+      );
+    }
+
+    return new Response(HTML, {
+      status: 200,
+      headers: {
+        "content-type":
+          "text/html;charset=UTF-8",
+        "cache-control":
+          "no-store"
+      }
+    });
+
+  }
+
+};
